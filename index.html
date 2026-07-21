@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>URL短縮エンコーダー</title>
+    <!-- 1. 世界標準のQRコード画像化ライブラリ(qrcode.min.js)を1行で読み込み -->
+    <script src="https://cloudflare.com"></script>
     <style>
         body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
         .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #f9f9f9; }
@@ -19,6 +21,7 @@
         .short-url-link:hover { text-decoration: underline; background: #e9ecef; }
         .qr-container { display: flex; flex-direction: column; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ccc; }
         .qr-title { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 15px; }
+        /* 生成されたPNG画像のサイズを200pxに固定して綺麗に見せる */
         #qrcode img { border: 4px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 200px; height: 200px; }
     </style>
 </head>
@@ -94,9 +97,13 @@ document.getElementById('generateBtn').addEventListener('click', () => {
         shortUrlText.href = shortUrl;
         resultArea.style.display = 'block';
 
-        // Googleの信頼された公式APIを使って、ライブラリ無しで100%安全かつ読み取り可能なQRコードを即時表示
-        const googleQrUrl = `https://googleapis.com{encodeURIComponent(shortUrl)}`;
-        qrcodeDiv.innerHTML = `<img src="${googleQrUrl}" alt="QRコード">`;
+        // 2. ライブラリを使って、HTMLの中に高解像度な本物の「PNG画像」を自動で書き出す（たったの4行！）
+        qrcodeDiv.innerHTML = "";
+        const imgElement = document.createElement('img');
+        qrcodeDiv.appendChild(imgElement);
+        
+        // エラー訂正レベルを最高(H)にして高精細なPNGを生成
+        QRCode.toDataURL(imgElement, shortUrl, { errorCorrectionLevel: 'H', width: 400 });
 
     } catch (e) {
         alert('エラーが発生しました。');
