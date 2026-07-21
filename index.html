@@ -119,8 +119,11 @@ document.getElementById('generateBtn').addEventListener('click', () => {
         const protocolFlag = (protocolSelect.value === "https://") ? "s|" : "h|";
         const compressed = encodeBase66(protocolFlag + rawInput);
         
+        // 末尾の「/index.html」や「/」をきれいに処理
         const currentPath = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
-        const shortUrl = `${currentPath}/a?=${compressed}`;
+        
+        // 修正箇所：/a?= から /?a= の形式に変更
+        const shortUrl = `${currentPath}/?a=${compressed}`;
 
         shortUrlText.innerText = shortUrl;
         shortUrlText.href = shortUrl;
