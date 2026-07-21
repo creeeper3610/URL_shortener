@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL短縮・転送システム</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #f9f9f9; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; font-size: 16px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; padding: 10px; background: #e9ecef; border-left: 5px solid #28a745; word-break: break-all; }
+        .prefix { color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="container">
+    <!-- 画面はJavaScriptで動的に切り替わります -->
+    <p>読み込み中...</p>
+</div>
+
+<script>
+// --- エンコード・デコード用のヘルパー関数 ---
+// URL安全なBase64に変換（+を-, /を_, =を削除）
+function safeBtoa(str) {
+    return btoa(unescape(encodeURIComponent(str)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function safeAtob(str) {
+    // 削られた「=」を復元してデコード
+    let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) { base64 += '='; }
+    return decodeURIComponent(escape(atob(base64)));
+}
+
+// 自分のサイトのベースURLを取得（末尾のa?=を手前まで自動調整）
+function getBaseUrl() {
+    return window.location.origin + window.location.pathname.replace(/\/$/, "");
+}
+
+// --- メイン処理 ---
+window.addEventListener('DOMContentLoaded', () => {
+    const app = document.getElementById('app');
+    const params = new URLSearchParams(window.location.search);
+    const encodeLink = params.get('a'); // ?a= の値を取得
+
+    // パラメータに「エンコード後のリンク」が存在する場合 → 【転送モード】
+    if (encodeLink) {
+        app.innerHTML = "<h2>ページを移動しています...</h2><p>自動でジャンプしない場合はしばらくお待ちください。</p>";
+        try {
+            // デコードして元のURLを復元
+            const originalUrl = safeAtob(encodeLink);
+            // 爆速で外部サイトへ転送
+            window.location.replace(originalUrl);
+        } catch (e) {
+            app.innerHTML = "<h2>エラー</h2><p>URLのデコードに失敗しました。リンクが壊れている可能性があります。</p>";
+        }
+        return;
+    }
+
+    // パラメータが空の場合 → 【生成モード】
+    app.innerHTML = `
+        <h2>URL短縮エンコーダー</h2>
+        <p>登録不要・完全無料でURLを圧縮します。</p>
+        <span class="prefix">https://</span>
+        <input type="text" id="urlInput" placeholder="://example.com" />
+        <button id="generateBtn">エンコードする</button>
+        <div id="resultArea" style="display:none;"></div>
+    `;
+
+    const urlInput = document.getElementById('urlInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const resultArea = document.getElementById('resultArea');
+
+    generateBtn.addEventListener('click', () => {
+        let rawInput = urlInput.value.trim();
+        if (!rawInput) {
+            alert('URLを入力してください');
+            return;
+        }
+
+        // 入力された文字列にプロトコルがない場合は自動で https:// を補完して正規化
+        if (!/^https?:\/\//i.test(rawInput)) {
+            rawInput = 'https://' + rawInput;
+        }
+
+        try {
+            // URLとして正しいかチェック
+            new URL(rawInput);
+            
+            // 安全にBase64圧縮
+            const compressed = safeBtoa(rawInput);
+            
+            // 要件通りの 「/a?=エンコード後のリンク」 の形を生成
+            const shortUrl = `${getBaseUrl()}/a?=${compressed}`;
+
+            resultArea.style.display = 'block';
+            resultArea.innerHTML = `
+                <p><strong>エンコードに成功しました！</strong></p>
+                <div class="result">
+                    <a href="${shortUrl}" target="_blank">${shortUrl}</a>
+                </div>
+                <p style="font-size:12px; color:#666; margin-top:5px;">※このリンクを開くと自動で元のページにデコード転送されます。</p>
+            `;
+        } catch (e) {
+            alert('有効なURL形式ではありません。入力内容を確認してください。');
+        }
+    });
+});
+</script>
+
+</body>
+</html>
