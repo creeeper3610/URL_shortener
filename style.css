@@ -1,0 +1,230 @@
+/* 全体のリセットとモダンなフォント設定 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif; 
+    background-color: #f4f7f6; 
+    color: #333333; 
+    line-height: 1.5;
+    padding: 40px 20px;
+}
+
+/* ツールサイト風のヘッダー・コンテナ */
+.app-container { 
+    max-width: 640px; 
+    margin: 0 auto; 
+    background: #ffffff; 
+    border-radius: 16px; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); 
+    padding: 40px;
+    border: 1px solid #eaeaea;
+}
+
+/* タイトルエリア */
+.app-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+.app-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+}
+.app-badge {
+    display: inline-block;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    margin-left: 6px;
+}
+.app-subtitle {
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* 入力エリアのレイアウト */
+.input-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 6px;
+    display: block;
+}
+.input-group { 
+    display: flex; 
+    align-items: center; 
+    margin-bottom: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+select { 
+    padding: 14px 16px; 
+    font-size: 16px; 
+    font-weight: 600;
+    border: 2px solid #cbd5e1; 
+    border-right: none; 
+    border-radius: 10px 0 0 10px; 
+    background: #f8fafc; 
+    color: #334155;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+select:focus {
+    border-color: #3b82f6;
+}
+input[type="text"] { 
+    flex: 1; 
+    padding: 14px 16px; 
+    font-size: 16px; 
+    border: 2px solid #cbd5e1; 
+    border-radius: 0 10px 10px 0; 
+    outline: none;
+    transition: all 0.2s;
+    background: #ffffff;
+}
+input[type="text"]:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* アクションボタン（メイン） */
+.action-btn { 
+    width: 100%; 
+    background: #2563eb; 
+    color: white; 
+    border: none; 
+    padding: 14px 20px; 
+    font-size: 16px; 
+    font-weight: 700;
+    border-radius: 10px; 
+    cursor: pointer; 
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+.action-btn:hover { 
+    background: #1d4ed8; 
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+.action-btn:active {
+    transform: translateY(0);
+}
+
+/* 結果表示カード */
+.result-box { 
+    margin-top: 35px; 
+    padding: 30px; 
+    background: #f8fafc; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 12px; 
+}
+.result-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: center;
+    margin-bottom: 16px;
+}
+.short-url-container { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+}
+
+/* 横幅いっぱいのプレミアムなコピーボタン */
+.copy-btn { 
+    width: 100%; 
+    background: #10b981; 
+    color: white; 
+    border: none; 
+    padding: 14px 15px; 
+    font-size: 16px; 
+    font-weight: 700; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    text-align: center; 
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+.copy-btn:hover { 
+    background: #059669; 
+    transform: translateY(-1px);
+}
+
+/* 押せる短縮URL用リンク */
+.short-url-link { 
+    display: block; 
+    padding: 14px; 
+    background: #ffffff; 
+    border-radius: 8px; 
+    color: #2563eb; 
+    text-decoration: none; 
+    font-weight: 700; 
+    word-break: break-all; 
+    font-size: 15px; 
+    border: 1px solid #cbd5e1; 
+    text-align: center; 
+    transition: all 0.2s;
+}
+.short-url-link:hover { 
+    border-color: #2563eb;
+    background: #f0f5ff;
+}
+
+/* QRコードセクション */
+.qr-container { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    margin-top: 24px; 
+    padding-top: 24px; 
+    border-top: 1px dashed #cbd5e1; 
+}
+.qr-title { 
+    font-size: 13px; 
+    font-weight: 700; 
+    color: #64748b; 
+    margin-bottom: 16px; 
+}
+
+/* QRコードの台座 */
+#qrcode {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+}
+#qrcode canvas, #qrcode img { 
+    width: 200px; 
+    height: 200px; 
+    display: block; 
+}
+
+/* QRコードダウンロードボタン */
+.download-btn { 
+    width: 226px; 
+    background: #0f172a; 
+    color: white; 
+    border: none; 
+    padding: 12px; 
+    font-size: 14px; 
+    font-weight: 700; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    text-align: center; 
+    margin-top: 16px; 
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+}
+.download-btn:hover { 
+    background: #1e293b; 
+}
