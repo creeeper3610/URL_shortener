@@ -1,24 +1,16 @@
 <svg xmlns="http://w3.org" viewBox="0 0 512 512" width="100%" height="100%">
-  <defs>
-    <!-- 綺麗なグラデーションはそのまま維持 -->
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4F46E5" />
-      <stop offset="100%" stop-color="#06B6D4" />
-    </linearGradient>
-  </defs>
-
-  <!-- アプリ風の角丸背景 -->
-  <rect width="512" height="512" rx="120" fill="url(#bgGrad)" />
+  <!-- 背景色：グラデーションではなく単色の美しいWebブルー（GitHub互換性を最優先） -->
+  <rect width="512" height="512" rx="120" fill="#0284c7" />
 
   <!-- メイングラフィック：超王道の「リンク」マーク -->
-  <g transform="translate(256, 256) rotate(-45)" fill="none" stroke="#FFFFFF" stroke-width="40" stroke-linecap="round">
-    <!-- 左側のカプセル（鎖の左半分） -->
+  <g transform="translate(256, 256) rotate(-45)" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round">
+    <!-- 左側の鎖パーツ -->
     <path d="M -30,-50 L -70,-50 A 50,50 0 0,0 -70,50 L -30,50" />
     
-    <!-- 右側のカプセル（鎖の右半分） -->
+    <!-- 右側の鎖パーツ -->
     <path d="M 30,-50 L 70,-50 A 50,50 0 0,1 70,50 L 30,50" />
     
-    <!-- 中央の「短縮（ギュッと縮める）」を意味するシンプルな真ん中の1本線 -->
+    <!-- 中央の短縮接続線 -->
     <line x1="-20" y1="0" x2="20" y2="0" stroke-width="40" />
   </g>
 </svg>
