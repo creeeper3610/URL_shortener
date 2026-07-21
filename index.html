@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Base66 URL Shortener</title>
-    <!-- CSSが反映されない問題を解決するため、URLの末尾に自動で時間を付けてキャッシュを強制突破します -->
+    <!-- キャッシュを無効化して常に最新のstyle.cssを読み込む -->
     <script>
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -17,20 +17,20 @@
 <body>
 
 <div class="app-layout">
-    <!-- ヘッダーセクション -->
+    <!-- x.gdスタイルのミニマルヘッダー -->
     <header class="app-header">
         <div class="logo-area">
-            <span class="logo-icon">⚡</span>
-            <h1 class="app-title">Base66 Shortener</h1>
-            <span class="app-badge">Pro v1.0</span>
+            <!-- サイトロゴとして icon.svg を美しく読み込み -->
+            <img src="./icon.svg" alt="Base66 Logo" class="logo-img" />
+            <h1 class="app-title">Base66</h1>
+            <span class="app-badge">Free</span>
         </div>
-        <p class="app-subtitle">URL安全な66文字をフル活用。独自の66進数数学アルゴリズムによる、サーバーレス次世代高効率URL圧縮システム。</p>
+        <p class="app-subtitle">長いURLを最短に。登録不要・完全無料で使える無期限の次世代URL短縮サービス。</p>
     </header>
 
     <main class="app-main">
-        <!-- 入力カード -->
-        <div class="card input-card">
-            <h2 class="card-title">短縮したいURLを入力</h2>
+        <!-- 入力セクション -->
+        <div class="tool-section input-section">
             <div class="input-group">
                 <div class="select-wrapper">
                     <select id="protocolSelect">
@@ -40,39 +40,32 @@
                 </div>
                 <input type="text" id="urlInput" placeholder="example.com" />
             </div>
-            <button id="generateBtn" class="action-btn">
-                <span>短縮URLを生成する</span>
-                <span class="btn-arrow">→</span>
-            </button>
+            <!-- 矢印を完全に削除した、洗練された単一ボタン -->
+            <button id="generateBtn" class="action-btn">短縮URLを作成する</button>
         </div>
 
-        <!-- 結果表示エリア (最初は非表示) -->
-        <div id="resultArea" class="card result-card" style="display:none;">
-            <div class="success-header">
-                <span class="success-icon">✓</span>
-                <h2 class="card-title">短縮URLの生成に成功しました</h2>
-            </div>
+        <!-- 結果表示セクション (最初は非表示) -->
+        <div id="resultArea" class="tool-section result-section" style="display:none;">
+            <h2 class="section-title">短縮URLが完成しました</h2>
             
             <div class="result-actions">
-                <button id="copyBtn" class="copy-btn">URLをクリップボードにコピー</button>
+                <button id="copyBtn" class="copy-btn">URLをコピーする</button>
                 <a id="shortUrlText" class="short-url-link" href="#" target="_blank" title="新しいタブで開く"></a>
             </div>
             
-            <div class="qr-section">
-                <h3 class="qr-title">スマートフォン読み取り用QRコード</h3>
+            <div class="qr-container">
+                <h3 class="qr-title">QRコード</h3>
                 <div class="qr-box">
                     <div id="qrcode"></div>
                 </div>
-                <button id="downloadBtn" class="download-btn">
-                    <span class="download-icon">↓</span>QRコード画像を保存
-                </button>
+                <button id="downloadBtn" class="download-btn">QRコードを保存する</button>
             </div>
         </div>
     </main>
 </div>
 
 <script>
-// --- [仕組みは1ミリも変えていません] URL安全なBase66暗号化システム ---
+// --- [仕組みは完璧に維持しています] URL安全なBase66暗号化システム ---
 const BASE66_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~";
 
 function encodeBase66(str) {
@@ -137,7 +130,7 @@ document.getElementById('generateBtn').addEventListener('click', () => {
             text: shortUrl,
             width: 200,
             height: 200,
-            colorDark : "#0f172a",
+            colorDark : "#222222",
             colorLight : "#ffffff",
             correctLevel : QRCode.CorrectLevel.H
         });
@@ -155,12 +148,12 @@ document.getElementById('copyBtn').addEventListener('click', () => {
     const copyBtn = document.getElementById('copyBtn');
     
     navigator.clipboard.writeText(shortUrl).then(() => {
-        copyBtn.innerText = "✓ クリップボードにコピーしました！";
-        copyBtn.style.background = "#059669";
+        copyBtn.innerText = "コピー完了！";
+        copyBtn.style.background = "#4ade80"; // 成功時の一時的なライトグリーン
         
         setTimeout(() => {
-            copyBtn.innerText = "URLをクリップボードにコピー";
-            copyBtn.style.background = "#10b981";
+            copyBtn.innerText = "URLをコピーする";
+            copyBtn.style.background = "#222222"; // 元のシックな黒に戻す
         }, 2000);
     });
 });
