@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URL短縮・転送システム</title>
+    <title>URL短縮・転送システム【確定版】</title>
     <style>
         body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
         .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #f9f9f9; }
@@ -17,26 +17,24 @@
 <body>
 
 <div id="app" class="container">
-    <!-- 画面はJavaScriptで動的に切り替わります -->
     <p>読み込み中...</p>
 </div>
 
 <script>
-// --- エンコード・デコード用のヘルパー関数 ---
-// URL安全なBase64に変換（+を-, /を_, =を削除）
-function safeBtoa(str) {
+// --- 安全なエンコード・デコード処理 ---
+// 入力されたURL内の . / % などの記号や日本語を100%安全に保護して変換する
+function safeEncode(str) {
     return btoa(unescape(encodeURIComponent(str)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-function safeAtob(str) {
-    // 削られた「=」を復元してデコード
+function safeDecode(str) {
     let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
     while (base64.length % 4) { base64 += '='; }
     return decodeURIComponent(escape(atob(base64)));
 }
 
-// 自分のサイトのベースURLを取得（末尾のa?=を手前まで自動調整）
+// 自分のサイトのベースURLを取得
 function getBaseUrl() {
     return window.location.origin + window.location.pathname.replace(/\/$/, "");
 }
@@ -44,29 +42,37 @@ function getBaseUrl() {
 // --- メイン処理 ---
 window.addEventListener('DOMContentLoaded', () => {
     const app = document.getElementById('app');
-    const params = new URLSearchParams(window.location.search);
-    const encodeLink = params.get('a'); // ?a= の値を取得
+    
+    // 【超重要】URLの「?=[データ]」から、ブラウザのバグを回避して確実にデータを抜き出す
+    const searchString = window.location.search; 
+    let encodeLink = null;
+    
+    if (searchString.startsWith('?=')) {
+        encodeLink = searchString.substring(2); // "?=" の2文字を削ってデータだけを無傷で抽出
+    }
 
-    // パラメータに「エンコード後のリンク」が存在する場合 → 【転送モード】
+    // 【転送モード】パラメータが存在する場合
     if (encodeLink) {
-        app.innerHTML = "<h2>ページを移動しています...</h2><p>自動でジャンプしない場合はしばらくお待ちください。</p>";
+        app.innerHTML = "<h2>ページを移動しています...</h2>";
         try {
-            // デコードして元のURLを復元
-            const originalUrl = safeAtob(encodeLink);
-            // 爆速で外部サイトへ転送
-            window.location.replace(originalUrl);
+            // 元の文字列（://google.com... 等）を完全復元
+            const originalText = safeDecode(encodeLink);
+            
+            // 開く瞬間だけ自動で https:// を補完してブラウザにサイトを移行させる
+            const targetUrl = 'https://' + originalText;
+            window.location.replace(targetUrl);
         } catch (e) {
-            app.innerHTML = "<h2>エラー</h2><p>URLのデコードに失敗しました。リンクが壊れている可能性があります。</p>";
+            app.innerHTML = "<h2>エラー</h2><p>URLの解析に失敗しました。リンクが壊れている可能性があります。</p>";
         }
         return;
     }
 
-    // パラメータが空の場合 → 【生成モード】
+    // 【生成モード】パラメータがない場合
     app.innerHTML = `
         <h2>URL短縮エンコーダー</h2>
-        <p>登録不要・完全無料でURLを圧縮します。</p>
+        <p>URLに含まれる記号（. / _ - %）も安全に処理します。</p>
         <span class="prefix">https://</span>
-        <input type="text" id="urlInput" placeholder="://example.com" />
+        <input type="text" id="urlInput" placeholder="://google.com%" />
         <button id="generateBtn">エンコードする</button>
         <div id="resultArea" style="display:none;"></div>
     `;
@@ -78,23 +84,18 @@ window.addEventListener('DOMContentLoaded', () => {
     generateBtn.addEventListener('click', () => {
         let rawInput = urlInput.value.trim();
         if (!rawInput) {
-            alert('URLを入力してください');
+            alert('入力してください');
             return;
         }
 
-        // 入力された文字列にプロトコルがない場合は自動で https:// を補完して正規化
-        if (!/^https?:\/\//i.test(rawInput)) {
-            rawInput = 'https://' + rawInput;
-        }
+        // ユーザーが https:// を入力してしまっていたら自動で削る
+        rawInput = rawInput.replace(/^https?:\/\//i, '');
 
         try {
-            // URLとして正しいかチェック
-            new URL(rawInput);
+            // 安全にエンコードを実行
+            const compressed = safeEncode(rawInput);
             
-            // 安全にBase64圧縮
-            const compressed = safeBtoa(rawInput);
-            
-            // 要件通りの 「/a?=エンコード後のリンク」 の形を生成
+            // ご希望通りの /a?=エンコード後のリンク 形式を生成
             const shortUrl = `${getBaseUrl()}/a?=${compressed}`;
 
             resultArea.style.display = 'block';
@@ -103,10 +104,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 <div class="result">
                     <a href="${shortUrl}" target="_blank">${shortUrl}</a>
                 </div>
-                <p style="font-size:12px; color:#666; margin-top:5px;">※このリンクを開くと自動で元のページにデコード転送されます。</p>
             `;
         } catch (e) {
-            alert('有効なURL形式ではありません。入力内容を確認してください。');
+            alert('エラーが発生しました。');
         }
     });
 });
