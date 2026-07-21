@@ -3,11 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <script>
-    // ブラウザが画面（Body）を描画し始める前に、このスクリプトが最優先・最速で実行されます
-    function safeDecode(str) {
-        let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-        while (base64.length % 4) { base64 += '='; }
-        return decodeURIComponent(escape(atob(base64)));
+    // ★ここにも「絶対にURLで壊れない66文字」のマスターリストを定義
+    const BASE66_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~";
+
+    // ★ガチの66進数(Base66)デコード処理
+    function decodeBase66(str) {
+        let num = 0n;
+        for (let i = 0; i < str.length; i++) {
+            const index = BASE66_CHARS.indexOf(str[i]);
+            if (index === -1) return null;
+            num = num * 66n + BigInt(index);
+        }
+        const bytes = [];
+        while (num > 0n) {
+            bytes.unshift(Number(num & 0xFFn));
+            num = num >> 8n;
+        }
+        const decoder = new TextDecoder();
+        return decoder.decode(new Uint8Array(bytes));
     }
 
     const searchString = window.location.search; 
@@ -21,21 +34,18 @@
 
     if (encodeLink) {
         try {
-            const decodedText = safeDecode(encodeLink);
+            // 66進数として解読
+            const decodedText = decodeBase66(encodeLink);
             let targetUrl = "";
 
-            // 先頭に通信フラグ（s| または h|）があるかチェック
             if (decodedText.startsWith("s|")) {
                 targetUrl = "https://" + decodedText.substring(2);
             } else if (decodedText.startsWith("h|")) {
                 targetUrl = "http://" + decodedText.substring(2);
             } else {
-                // 過去に作ったフラグなしの古い短縮リンク（'エンコード後のリンク'だけ）の場合も、
-                // 壊さずにそのまま https:// でアクセスできるようにして互換性を100%維持します
                 targetUrl = "https://" + decodedText;
             }
 
-            // 1ミリ秒の遅延もなく即座にリダイレクト
             window.location.replace(targetUrl);
         } catch (e) {
             alert("URLの解析に失敗しました。");
