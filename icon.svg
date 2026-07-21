@@ -1,16 +1,8 @@
-<svg xmlns="http://w3.org" viewBox="0 0 512 512" width="100%" height="100%">
-  <!-- 背景色：グラデーションではなく単色の美しいWebブルー（GitHub互換性を最優先） -->
+<svg xmlns="http://w3.org" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="120" fill="#0284c7" />
-
-  <!-- メイングラフィック：超王道の「リンク」マーク -->
   <g transform="translate(256, 256) rotate(-45)" fill="none" stroke="#ffffff" stroke-width="40" stroke-linecap="round">
-    <!-- 左側の鎖パーツ -->
-    <path d="M -30,-50 L -70,-50 A 50,50 0 0,0 -70,50 L -30,50" />
-    
-    <!-- 右側の鎖パーツ -->
-    <path d="M 30,-50 L 70,-50 A 50,50 0 0,1 70,50 L 30,50" />
-    
-    <!-- 中央の短縮接続線 -->
+    <path d="M-30,-50 L-70,-50 A50,50 0 0 0 -70,50 L-30,50" />
+    <path d="M30,-50 L70,-50 A50,50 0 0 1 70,50 L30,50" />
     <line x1="-20" y1="0" x2="20" y2="0" stroke-width="40" />
   </g>
 </svg>
