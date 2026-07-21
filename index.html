@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL短縮エンコーダー</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #f9f9f9; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; font-size: 16px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 20px; padding: 10px; background: #e9ecef; border-left: 5px solid #28a745; word-break: break-all; }
+        .prefix { color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>URL短縮エンコーダー</h2>
+    <p>URLに含まれる記号（. / _ - %）も安全に処理します。</p>
+    <span class="prefix">https://</span>
+    <input type="text" id="urlInput" placeholder="://google.com%" />
+    <button id="generateBtn">エンコードする</button>
+    <div id="resultArea" style="display:none;"></div>
+</div>
+
+<script>
+// URLに使える記号（. / _ - %）や日本語を安全に守って変換する処理
+function safeEncode(str) {
+    return btoa(unescape(encodeURIComponent(str)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+document.getElementById('generateBtn').addEventListener('click', () => {
+    const urlInput = document.getElementById('urlInput');
+    const resultArea = document.getElementById('resultArea');
+    let rawInput = urlInput.value.trim();
+    
+    if (!rawInput) {
+        alert('入力してください');
+        return;
+    }
+
+    // 先頭に https:// や http:// が入力されていたら自動で削る
+    rawInput = rawInput.replace(/^https?:\/\//i, '');
+
+    try {
+        const compressed = safeEncode(rawInput);
+        
+        // 現在のサイトのドメイン（トップURL）を取得し、末尾の / などを調整
+        const currentPath = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
+        
+        // ご希望通りの 「/a?=エンコード後のリンク」 の形を生成
+        const shortUrl = `${currentPath}/a?=${compressed}`;
+
+        resultArea.style.display = 'block';
+        resultArea.innerHTML = `
+            <p><strong>エンコードに成功しました！</strong></p>
+            <div class="result">
+                <a href="${shortUrl}" target="_blank">${shortUrl}</a>
+            </div>
+        `;
+    } catch (e) {
+        alert('エラーが発生しました。');
+    }
+});
+</script>
+</body>
+</html>
