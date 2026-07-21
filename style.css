@@ -1,47 +1,46 @@
 /* ==========================================================================
-   Base66 Shortener プレミアム・プロ仕様テーマ
+   Base66 Shortener x.gdオマージュ・プロ仕様フラットデザイン
    ========================================================================== */
 
-/* 全体のリセットとモダンなフォント設定 */
+/* 全体のリセット */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body { 
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", sans-serif; 
-    background-color: #fafbfe; /* 透明感のある非常に薄い青みのある背景 */
+    background-color: #f8fafc; /* 清潔感のある明るいグレー背景 */
     color: #1e293b; 
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    padding: 60px 20px;
 }
 
-/* アプリ全体のレイアウトコンテナ */
+/* アプリ全体のコンテナレイアウト */
 .app-layout {
-    max-width: 680px;
-    margin: 60px auto;
-    padding: 0 24px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 /* ==========================================================================
-   ヘッダーセクション（ロゴ＆タイトル）
+   ヘッダーセクション（x.gdオマージュのスマート配置）
    ========================================================================== */
 .app-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 35px;
 }
 
 .logo-area {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 12px;
 }
 
-.logo-icon {
-    font-size: 28px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.2));
+/* 指定された icon.svg のサイズと美しさを保証するスタイル */
+.logo-img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
 }
 
 .app-title {
@@ -52,84 +51,76 @@ body {
 }
 
 .app-badge {
-    background: linear-gradient(135deg, #1e293b, #0f172a);
-    color: #f8fafc;
-    font-size: 10px;
-    font-weight: 800;
-    padding: 3px 8px;
-    border-radius: 6px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
     letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .app-subtitle {
     font-size: 14px;
     color: #64748b;
-    max-width: 520px;
-    margin: 0 auto;
+    font-weight: 500;
 }
 
 /* ==========================================================================
-   カードの共通デザイン
+   ツールセクション共通カード（フラット＆クリーン）
    ========================================================================== */
-.card {
+.tool-section {
     background: #ffffff;
-    border-radius: 20px;
-    padding: 36px;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+    border-radius: 12px;
+    padding: 32px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     margin-bottom: 24px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.card-title {
+.section-title {
     font-size: 16px;
     font-weight: 700;
     color: #0f172a;
-    margin-bottom: 16px;
-    letter-spacing: -0.2px;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
 /* ==========================================================================
-   入力エリアの洗練されたUI
+   入力フォームエリア（直線的で美しいフラットスタイル）
    ========================================================================== */
 .input-group {
     display: flex;
     align-items: center;
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 4px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-bottom: 20px;
+    background: #ffffff;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
 }
 
-/* 入力欄が選択された時の美しいシアン/ブルーの光 */
+/* 入力にフォーカスした際の美しいシアン・ブルーのソリッドボーダー */
 .input-group:focus-within {
     border-color: #3b82f6;
-    background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
-}
-
-.select-wrapper {
-    position: relative;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 select {
-    padding: 12px 16px;
+    padding: 14px 16px;
     font-size: 15px;
     font-weight: 600;
     border: none;
-    background: transparent;
+    background: #f8fafc;
     color: #334155;
     cursor: pointer;
     outline: none;
-    border-right: 2px solid #e2e8f0;
+    border-radius: 6px 0 0 6px;
+    border-right: 2px solid #cbd5e1;
 }
 
 input[type="text"] {
     flex: 1;
-    padding: 12px 16px;
+    padding: 14px 16px;
     font-size: 16px;
     font-weight: 500;
     border: none;
@@ -142,171 +133,130 @@ input[type="text"]::placeholder {
     color: #94a3b8;
 }
 
-/* 生成ボタン */
+/* メインアクションボタン（x.gd風の信頼性の高い鮮やかなブルー） */
 .action-btn {
     width: 100%;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: white;
+    background: #2563eb;
+    color: #ffffff;
     border: none;
-    padding: 16px 24px;
+    padding: 15px 24px;
     font-size: 16px;
     font-weight: 700;
-    border-radius: 12px;
+    border-radius: 8px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    transition: background 0.15s ease;
+    text-align: center;
 }
 
 .action-btn:hover {
-    background: linear-gradient(135deg, #1d4ed8, #1e40af);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
-}
-
-.btn-arrow {
-    transition: transform 0.2s ease;
-}
-
-.action-btn:hover .btn-arrow {
-    transform: translateX(4px);
+    background: #1d4ed8;
 }
 
 /* ==========================================================================
-   結果表示カードのプロレイアウト
+   結果表示・コピー・QRコードレイアウト
    ========================================================================== */
-.result-card {
-    border-color: rgba(16, 185, 129, 0.2);
-    background: linear-gradient(to bottom, #ffffff, #fdfefe);
-    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.result-section {
+    animation: fadeIn 0.3s ease-out forwards;
 }
 
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(10px); }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-.success-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.success-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    background: #e6f4ea;
-    color: #137333;
-    border-radius: 50%;
-    font-size: 12px;
-    font-weight: bold;
 }
 
 .result-actions {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
 }
 
-/* コピペボタン */
+/* コピーボタン（x.gdをオマージュした絶対的な使いやすさのフラットな黒） */
 .copy-btn {
     width: 100%;
-    background: #10b981;
-    color: white;
+    background: #0f172a;
+    color: #ffffff;
     border: none;
-    padding: 16px;
+    padding: 15px;
     font-size: 15px;
     font-weight: 700;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+    transition: all 0.15s ease;
+    text-align: center;
 }
 
 .copy-btn:hover {
-    background: #059669;
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+    background: #1e293b;
 }
 
-/* 押せるリンク */
+/* 押すだけで開ける高視認性の短縮リンク */
 .short-url-link {
     display: block;
-    padding: 16px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    padding: 15px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
     color: #2563eb;
     text-decoration: none;
     font-weight: 700;
     font-size: 15px;
     word-break: break-all;
     text-align: center;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 }
 
 .short-url-link:hover {
-    background: #f0f5ff;
-    border-color: #3b82f6;
+    background: #e2e8f0;
+    border-color: #2563eb;
 }
 
-/* ==========================================================================
-   QRコードセクション
-   ========================================================================== */
-.qr-section {
+/* QRコードブロック */
+.qr-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    border-top: 1px dashed #e2e8f0;
-    padding-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 24px;
 }
 
 .qr-title {
     font-size: 13px;
     font-weight: 700;
     color: #64748b;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .qr-box {
     background: #ffffff;
-    padding: 16px;
-    border-radius: 16px;
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06);
-    border: 1px solid #f1f5f9;
-    margin-bottom: 16px;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    margin-bottom: 14px;
 }
 
 #qrcode canvas, #qrcode img {
     width: 200px !important;
     height: 200px !important;
+    display: block;
 }
 
-/* ダウンロードボタン */
+/* ダウンロードボタン（フラットなボーダースタイル） */
 .download-btn {
-    width: 234px; /* QRの台座に完全にフィット */
-    background: #0f172a;
-    color: #ffffff;
-    border: none;
-    padding: 12px;
+    width: 230px; /* QRの枠組みにジャストフィット */
+    background: #ffffff;
+    color: #0f172a;
+    border: 2px solid #0f172a;
+    padding: 10px;
     font-size: 14px;
     font-weight: 700;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+    text-align: center;
+    transition: all 0.15s ease;
 }
 
 .download-btn:hover {
-    background: #1e293b;
+    background: #0f172a;
+    color: #ffffff;
 }
