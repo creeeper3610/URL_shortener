@@ -5,6 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <title>Base66 URL Shortener</title>
+    
+    <script>
+    // --- [最速リダイレクト処理] アクセス時にパラメータがあれば即座に転送 ---
+    const BASE66_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~";
+
+    function decodeBase66(str) {
+        let num = 0n;
+        for (let i = 0; i < str.length; i++) {
+            const index = BASE66_CHARS.indexOf(str[i]);
+            if (index === -1) return null;
+            num = num * 66n + BigInt(index);
+        }
+        const bytes = [];
+        while (num > 0n) {
+            bytes.unshift(Number(num & 0xFFn));
+            num = num >> 8n;
+        }
+        const decoder = new TextDecoder();
+        return decoder.decode(new Uint8Array(bytes));
+    }
+
+    // URLのクエリパラメータを解析
+    const params = new URLSearchParams(window.location.search);
+    const encodeLink = params.get('a'); // ?a= の値を取得
+
+    if (encodeLink) {
+        try {
+            // 66進数として解読
+            const decodedText = decodeBase66(encodeLink);
+            if (decodedText) {
+                let targetUrl = "";
+                if (decodedText.startsWith("s|")) {
+                    targetUrl = "https://" + decodedText.substring(2);
+                } else if (decodedText.startsWith("h|")) {
+                    targetUrl = "http://" + decodedText.substring(2);
+                } else {
+                    targetUrl = "https://" + decodedText;
+                }
+                // 履歴を残さず最速でリダイレクト
+                window.location.replace(targetUrl);
+            }
+        } catch (e) {
+            // エラー時はアラートを出してリダイレクトを中断し、通常のツール画面を表示
+            alert("URLの解析に失敗しました。");
+        }
+    }
+    </script>
+
     <!-- キャッシュを無効化して常に最新のstyle.cssを読み込む -->
     <script>
         const link = document.createElement('link');
@@ -65,28 +113,8 @@
 </div>
 
 <script>
-// --- [仕組みは完璧に維持しています] URL安全なBase66暗号化システム ---
-const BASE66_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~";
-
-function encodeBase66(str) {
-    const encoder = new TextEncoder();
-    const bytes = encoder.encode(str);
-    let num = 0n;
-    for (let i = 0; i < bytes.length; i++) {
-        num = (num << 8n) + BigInt(bytes[i]);
-    }
-    if (num === 0n) return BASE66_CHARS;
-    
-    let result = "";
-    while (num > 0n) {
-        const remainder = Number(num % 66n);
-        result = BASE66_CHARS[remainder] + result;
-        num = num / 66n;
-    }
-    return result;
-}
-
-// コピペ入力時の自動プロトコル連動
+// --- URL安全なBase66暗号化システム ---
+// 下部の生成ロジックでもBASE66_CHARSを使用するため保持
 document.getElementById('urlInput').addEventListener('input', (e) => {
     let value = e.target.value.trim();
     if (/^https:\/\//i.test(value)) {
@@ -119,10 +147,9 @@ document.getElementById('generateBtn').addEventListener('click', () => {
         const protocolFlag = (protocolSelect.value === "https://") ? "s|" : "h|";
         const compressed = encodeBase66(protocolFlag + rawInput);
         
-        // 末尾の「/index.html」や「/」をきれいに処理
         const currentPath = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
         
-        // 修正箇所：/a?= から /?a= の形式に変更
+        // 新しいパラメータ形式のURLを生成
         const shortUrl = `${currentPath}/?a=${compressed}`;
 
         shortUrlText.innerText = shortUrl;
@@ -145,6 +172,25 @@ document.getElementById('generateBtn').addEventListener('click', () => {
     }
 });
 
+// 暗号化関数（ロジック完全維持）
+function encodeBase66(str) {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(str);
+    let num = 0n;
+    for (let i = 0; i < bytes.length; i++) {
+        num = (num << 8n) + BigInt(bytes[i]);
+    }
+    if (num === 0n) return BASE66_CHARS;
+    
+    let result = "";
+    while (num > 0n) {
+        const remainder = Number(num % 66n);
+        result = BASE66_CHARS[remainder] + result;
+        num = num / 66n;
+    }
+    return result;
+}
+
 // コピペボタンの処理
 document.getElementById('copyBtn').addEventListener('click', () => {
     const shortUrl = document.getElementById('shortUrlText').innerText;
@@ -152,11 +198,11 @@ document.getElementById('copyBtn').addEventListener('click', () => {
     
     navigator.clipboard.writeText(shortUrl).then(() => {
         copyBtn.innerText = "コピー完了！";
-        copyBtn.style.background = "#4ade80"; // 成功時の一時的なライトグリーン
+        copyBtn.style.background = "#4ade80";
         
         setTimeout(() => {
             copyBtn.innerText = "URLをコピーする";
-            copyBtn.style.background = "#222222"; // 元のシックな黒に戻す
+            copyBtn.style.background = "#222222";
         }, 2000);
     });
 });
