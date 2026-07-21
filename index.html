@@ -47,23 +47,28 @@
                 window.location.replace(targetUrl);
             }
         } catch (e) {
-            // エラー時はアラートを出してリダイレクトを中断し、通常のツール画面を表示
             alert("URLの解析に失敗しました。");
         }
     }
     </script>
 
-    <!-- キャッシュを無効化して常に最新のstyle.cssを読み込む -->
+    <!-- キャッシュを無効化しつつ、FOUC（デザイン崩れ）を防ぐ最速読み込み -->
+    <link id="mainStylesheet" rel="stylesheet" href="./style.css">
     <script>
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = './style.css?v=' + new Date().getTime();
-        document.head.appendChild(link);
+        // HTMLの解析を止めずに、最速でキャッシュ無効化クエリを付与
+        document.getElementById('mainStylesheet').href = './style.css?v=' + new Date().getTime();
+        
+        // CSSが読み終わったら、またはDOM準備ができたら即座に画面を表示する関数
+        function showApp() {
+            document.body.style.display = 'block';
+        }
     </script>
+    
     <!-- ライブラリの読み込み -->
     <script src="./qrcode.min.js" defer></script>
 </head>
-<body>
+<!-- 初期状態は完全に非表示（display:none）にし、CSS適用後にJavaScriptで開く -->
+<body style="display: none;" onload="showApp()">
 
 <div class="app-layout">
     <!-- x.gdスタイルのミニマルヘッダー -->
@@ -114,7 +119,6 @@
 
 <script>
 // --- URL安全なBase66暗号化システム ---
-// 下部の生成ロジックでもBASE66_CHARSを使用するため保持
 document.getElementById('urlInput').addEventListener('input', (e) => {
     let value = e.target.value.trim();
     if (/^https:\/\//i.test(value)) {
@@ -148,8 +152,6 @@ document.getElementById('generateBtn').addEventListener('click', () => {
         const compressed = encodeBase66(protocolFlag + rawInput);
         
         const currentPath = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
-        
-        // 新しいパラメータ形式のURLを生成
         const shortUrl = `${currentPath}/?a=${compressed}`;
 
         shortUrlText.innerText = shortUrl;
@@ -172,7 +174,6 @@ document.getElementById('generateBtn').addEventListener('click', () => {
     }
 });
 
-// 暗号化関数（ロジック完全維持）
 function encodeBase66(str) {
     const encoder = new TextEncoder();
     const bytes = encoder.encode(str);
@@ -191,7 +192,6 @@ function encodeBase66(str) {
     return result;
 }
 
-// コピペボタンの処理
 document.getElementById('copyBtn').addEventListener('click', () => {
     const shortUrl = document.getElementById('shortUrlText').innerText;
     const copyBtn = document.getElementById('copyBtn');
@@ -207,7 +207,6 @@ document.getElementById('copyBtn').addEventListener('click', () => {
     });
 });
 
-// ダウンロードボタンの処理
 document.getElementById('downloadBtn').addEventListener('click', () => {
     const qrcodeDiv = document.getElementById('qrcode');
     const img = qrcodeDiv.querySelector('img');
@@ -231,6 +230,9 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
         alert('QRコードの画像データが見つかりません。');
     }
 });
+
+// 万が一onloadが効かない場合のバックアップ表示処理
+setTimeout(showApp, 400);
 </script>
 </body>
 </html>
