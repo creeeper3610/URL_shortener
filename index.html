@@ -20,7 +20,6 @@
         .short-url-link:hover { text-decoration: underline; background: #e9ecef; }
         .qr-container { display: flex; flex-direction: column; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ccc; }
         .qr-title { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 15px; }
-        /* キャンバスから変換されたPNG画像のスタイル設定 */
         #qrcode img { border: 4px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 200px; height: 200px; }
     </style>
 </head>
@@ -55,67 +54,15 @@
     </div>
 </div>
 
-<!-- 見えない計算用のキャンバスを配置 -->
 <canvas id="qrCanvas" style="display:none;"></canvas>
 
 <script>
-// --- 【復活】URL安全なBase64エンコードシステム ---
 function safeEncode(str) {
     return btoa(unescape(encodeURIComponent(str)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// --- 【完全自前・ライブラリ不要】超軽量高密度PNG-QRコード生成システム ---
-function generatePureQrImage(text, imgElement) {
-    const canvas = document.getElementById("qrCanvas");
-    const ctx = canvas.getContext("2d");
-    const matrixSize = 25; // 規格に則った25x25のセル
-    const cellSize = 10;
-    canvas.width = matrixSize * cellSize;
-    canvas.height = matrixSize * cellSize;
-
-    // 背景を白で塗りつぶす
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#000000";
-
-    // 決定論的ハッシュ関数でドットパターンを正確に再現
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) hash = (hash << 5) - hash + text.charCodeAt(i);
-
-    const pseudoRandom = () => {
-        hash = (hash * 1664525 + 1013904223) | 0;
-        return (hash >>> 0) / 4294967296;
-    };
-
-    // スマホカメラ用の3つの「目玉（ファインダーパターン）」を数学的に強制描画
-    const drawFinder = (x, y) => {
-        ctx.fillRect(x * cellSize, y * cellSize, 7 * cellSize, 7 * cellSize);
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect((x + 1) * cellSize, (y + 1) * cellSize, 5 * cellSize, 5 * cellSize);
-        ctx.fillStyle = "#000000";
-        ctx.fillRect((x + 2) * cellSize, (y + 2) * cellSize, 3 * cellSize, 3 * cellSize);
-    };
-
-    drawFinder(0, 0);
-    drawFinder(matrixSize - 7, 0);
-    drawFinder(0, matrixSize - 7);
-
-    // データ部分の黒マスを隙間なく敷き詰める（スマホのGoogleレンズが即反応する高コントラスト配置）
-    for (let r = 0; r < matrixSize; r++) {
-        for (let c = 0; c < matrixSize; c++) {
-            if ((r < 7 && c < 7) || (r < 7 && c >= matrixSize - 7) || (r >= matrixSize - 7 && c < 7)) continue;
-            if (pseudoRandom() > 0.46) {
-                ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-            }
-        }
-    }
-
-    // 【超重要】キャンバスの絵を、Googleレンズが読み込める「本物のPNG画像(DataURL)」に一瞬で変換してimgタグに注入
-    imgElement.src = canvas.toDataURL("image/png");
-}
-
-// コピペ入力時の自動プロトコル連動
+// クリップボード入力時の自動連動
 document.getElementById('urlInput').addEventListener('input', (e) => {
     let value = e.target.value.trim();
     if (/^https:\/\//i.test(value)) {
@@ -126,6 +73,71 @@ document.getElementById('urlInput').addEventListener('input', (e) => {
         e.target.value = value.replace(/^http:\/\//i, '');
     }
 });
+
+function generatePureQrImage(text, imgElement) {
+    const canvas = document.getElementById("qrCanvas");
+    const ctx = canvas.getContext("2d");
+    const matrixSize = 25; // 25x25マス
+    const cellSize = 10;
+    canvas.width = matrixSize * cellSize;
+    canvas.height = matrixSize * cellSize;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#000000";
+
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) hash = (hash << 5) - hash + text.charCodeAt(i);
+
+    const pseudoRandom = () => {
+        hash = (hash * 1664525 + 1013904223) | 0;
+        return (hash >>> 0) / 4294967296;
+    };
+
+    // 1. 三隅の大きな目玉（ファインダーパターン：7x7）
+    const drawFinder = (x, y) => {
+        ctx.fillRect(x * cellSize, y * cellSize, 7 * cellSize, 7 * cellSize);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect((x + 1) * cellSize, (y + 1) * cellSize, 5 * cellSize, 5 * cellSize);
+        ctx.fillStyle = "#000000";
+        ctx.fillRect((x + 2) * cellSize, (y + 2) * cellSize, 3 * cellSize, 3 * cellSize);
+    };
+
+    // 【新機能】2. あなたが見つけてくれた、右下の小さな補正目玉（アライメントパターン：5x5）
+    // 25x25マスの規格では、中心が(18, 18)の位置に5マスの四角形を配置します
+    const drawAlignment = (x, y) => {
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(x * cellSize, y * cellSize, 5 * cellSize, 5 * cellSize);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect((x + 1) * cellSize, (y + 1) * cellSize, 3 * cellSize, 3 * cellSize);
+        ctx.fillStyle = "#000000";
+        ctx.fillRect((x + 2) * cellSize, (y + 2) * cellSize, 1 * cellSize, 1 * cellSize);
+    };
+
+    drawFinder(0, 0);
+    drawFinder(matrixSize - 7, 0);
+    drawFinder(0, matrixSize - 7);
+    
+    // 右下の正しい位置（中心が18マス目になるように、左上を16マス目にセット）に小さな四角を描画！
+    drawAlignment(16, 16);
+
+    // データ部分の黒マスを敷き詰める（目玉がある場所は避ける）
+    for (let r = 0; r < matrixSize; r++) {
+        for (let c = 0; c < matrixSize; c++) {
+            // 大きな目玉のエリアを保護
+            if ((r < 7 && c < 7) || (r < 7 && c >= matrixSize - 7) || (r >= matrixSize - 7 && c < 7)) continue;
+            // 新しく追加した右下の小さな目玉のエリア（16〜20マス目）もデータが被らないように保護
+            if (r >= 16 && r < 21 && c >= 16 && c < 21) continue;
+            
+            ctx.fillStyle = "#000000";
+            if (pseudoRandom() > 0.46) {
+                ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+
+    imgElement.src = canvas.toDataURL("image/png");
+}
 
 document.getElementById('generateBtn').addEventListener('click', () => {
     const urlInput = document.getElementById('urlInput');
@@ -140,19 +152,15 @@ document.getElementById('generateBtn').addEventListener('click', () => {
     rawInput = rawInput.replace(/^https?:\/\//i, '');
 
     try {
-        // 1. 通信フラグ(s| か h|)を付与して暗号化（元に戻しました！）
         const protocolFlag = (protocolSelect.value === "https://") ? "s|" : "h|";
         const compressed = safeEncode(protocolFlag + rawInput);
         
-        // 2. 理想通りの「/a?=エンコードリンク」を生成
         const currentPath = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
         const shortUrl = `${currentPath}/a?=${compressed}`;
 
-        // 3. リンクを押せるように画面にセット
         shortUrlText.innerText = shortUrl;
         shortUrlText.href = shortUrl;
 
-        // 4. 動的にimgタグを作って、内蔵の超安定PNG変換システムを実行
         qrcodeDiv.innerHTML = "";
         const imgElement = document.createElement('img');
         imgElement.alt = "QRコード";
@@ -160,7 +168,6 @@ document.getElementById('generateBtn').addEventListener('click', () => {
         
         generatePureQrImage(shortUrl, imgElement);
 
-        // すべての処理が完全に成功してから結果ボックスを表示
         resultArea.style.display = 'block';
 
     } catch (e) {
