@@ -7,33 +7,53 @@
     <style>
         body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
         .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; background: #f9f9f9; }
-        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; font-size: 16px; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; }
+        .input-group { display: flex; align-items: center; margin: 10px 0; }
+        select { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; background: #fff; }
+        input[type="text"] { flex: 1; padding: 10px; box-sizing: border-box; font-size: 16px; border: 1px solid #ccc; border-radius: 0 4px 4px 0; }
+        button { width: 100%; background: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0056b3; }
         .result { margin-top: 20px; padding: 10px; background: #e9ecef; border-left: 5px solid #28a745; word-break: break-all; }
-        .prefix { color: #666; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>URL短縮エンコーダー</h2>
-    <p>URLに含まれる記号（. / _ - %）も安全に処理します。</p>
-    <span class="prefix">https://</span>
-    <input type="text" id="urlInput" placeholder="://google.com%" />
+    <p>URLに含まれる記号（. / _ - %）も安全に処理します。http/httpsを正しく選択してください。</p>
+    
+    <div class="input-group">
+        <select id="protocolSelect">
+            <option value="https://">https://</option>
+            <option value="http://">http://</option>
+        </select>
+        <input type="text" id="urlInput" placeholder="www.city.akishima.ed.jp/~haijima/" />
+    </div>
+    
     <button id="generateBtn">エンコードする</button>
     <div id="resultArea" style="display:none;"></div>
 </div>
 
 <script>
-// URLに使える記号（. / _ - %）や日本語を安全に守って変換する処理
 function safeEncode(str) {
     return btoa(unescape(encodeURIComponent(str)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// ユーザーが入力欄に直接「http://」などをコピペしたときの自動クリーンアップ
+document.getElementById('urlInput').addEventListener('input', (e) => {
+    let value = e.target.value.trim();
+    if (/^https:\/\//i.test(value)) {
+        document.getElementById('protocolSelect').value = "https://";
+        e.target.value = value.replace(/^https:\/\//i, '');
+    } else if (/^http:\/\//i.test(value)) {
+        document.getElementById('protocolSelect').value = "http://";
+        e.target.value = value.replace(/^http:\/\//i, '');
+    }
+});
+
 document.getElementById('generateBtn').addEventListener('click', () => {
     const urlInput = document.getElementById('urlInput');
+    const protocolSelect = document.getElementById('protocolSelect');
     const resultArea = document.getElementById('resultArea');
     let rawInput = urlInput.value.trim();
     
@@ -42,16 +62,15 @@ document.getElementById('generateBtn').addEventListener('click', () => {
         return;
     }
 
-    // 先頭に https:// や http:// が入力されていたら自動で削る
+    // 重複してプロトコルが入らないように念のため再度掃除
     rawInput = rawInput.replace(/^https?:\/\//i, '');
 
     try {
-        const compressed = safeEncode(rawInput);
+        // 【重要】選ばれた通信（httpかhttpsか）の情報を、リンクの先頭に「s|」または「h|」という1文字のフラグとして埋め込む
+        const protocolFlag = (protocolSelect.value === "https://") ? "s|" : "h|";
+        const compressed = safeEncode(protocolFlag + rawInput);
         
-        // 現在のサイトのドメイン（トップURL）を取得し、末尾の / などを調整
         const currentPath = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
-        
-        // ご希望通りの 「/a?=エンコード後のリンク」 の形を生成
         const shortUrl = `${currentPath}/a?=${compressed}`;
 
         resultArea.style.display = 'block';
