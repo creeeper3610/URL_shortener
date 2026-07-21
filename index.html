@@ -10,10 +10,19 @@
         .input-group { display: flex; align-items: center; margin: 10px 0; }
         select { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-right: none; border-radius: 4px 0 0 4px; background: #fff; }
         input[type="text"] { flex: 1; padding: 10px; box-sizing: border-box; font-size: 16px; border: 1px solid #ccc; border-radius: 0 4px 4px 0; }
-        button { width: 100%; background: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #0056b3; }
-        .result { margin-top: 20px; padding: 10px; background: #e9ecef; border-left: 5px solid #28a745; word-break: break-all; }
+        .action-btn { width: 100%; background: #007bff; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        .action-btn:hover { background: #0056b3; }
+        .result-box { margin-top: 25px; padding: 20px; background: #fff; border: 1px solid #e1e4e8; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .short-url-container { display: flex; align-items: center; margin-top: 10px; gap: 10px; }
+        .short-url-text { flex: 1; padding: 10px; background: #f1f3f5; border-radius: 4px; font-weight: bold; word-break: break-all; font-size: 14px; border: 1px solid #ced4da; }
+        .copy-btn { background: #28a745; color: white; border: none; padding: 10px 15px; font-size: 14px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+        .copy-btn:hover { background: #218838; }
+        .qr-container { display: flex; flex-direction: column; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px dashed #ccc; }
+        .qr-title { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 10px; }
+        #qrcode img { border: 4px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     </style>
+    <!-- QRコード生成用の定番・超軽量ライブラリを読み込み -->
+    <script src="https://cloudflare.com" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4vNcpmBAUSSO64cNUIdYxEXYOMDxlwJEWG7fGSwUtd04RWg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 
@@ -29,8 +38,22 @@
         <input type="text" id="urlInput" placeholder="example.com" />
     </div>
     
-    <button id="generateBtn">エンコードする</button>
-    <div id="resultArea" style="display:none;"></div>
+    <button id="generateBtn" class="action-btn">エンコードする</button>
+    
+    <!-- 結果表示エリア（最初は非表示） -->
+    <div id="resultArea" class="result-box" style="display:none;">
+        <p style="margin:0; font-weight:bold; color:#333;">短縮URLが完成しました！</p>
+        
+        <div class="short-url-container">
+            <div id="shortUrlText" class="short-url-text"></div>
+            <button id="copyBtn" class="copy-btn">コピー</button>
+        </div>
+        
+        <div class="qr-container">
+            <div class="qr-title">スマホで読み取る用 QRコード</div>
+            <div id="qrcode"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -39,7 +62,7 @@ function safeEncode(str) {
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// ユーザーが入力欄に直接「http://」などをコピペしたときの自動クリーンアップ
+// ユーザーが入力欄に直接「http://」などをコピペしたときの自動連動
 document.getElementById('urlInput').addEventListener('input', (e) => {
     let value = e.target.value.trim();
     if (/^https:\/\//i.test(value)) {
@@ -51,10 +74,15 @@ document.getElementById('urlInput').addEventListener('input', (e) => {
     }
 });
 
+let qrCodeInstance = null;
+
 document.getElementById('generateBtn').addEventListener('click', () => {
     const urlInput = document.getElementById('urlInput');
     const protocolSelect = document.getElementById('protocolSelect');
     const resultArea = document.getElementById('resultArea');
+    const shortUrlText = document.getElementById('shortUrlText');
+    const qrcodeDiv = document.getElementById('qrcode');
+    
     let rawInput = urlInput.value.trim();
     
     if (!rawInput) {
@@ -62,27 +90,54 @@ document.getElementById('generateBtn').addEventListener('click', () => {
         return;
     }
 
-    // 重複してプロトコルが入らないように念のため再度掃除
     rawInput = rawInput.replace(/^https?:\/\//i, '');
 
     try {
-        // 【重要】選ばれた通信（httpかhttpsか）の情報を、リンクの先頭に「s|」または「h|」という1文字のフラグとして埋め込む
         const protocolFlag = (protocolSelect.value === "https://") ? "s|" : "h|";
         const compressed = safeEncode(protocolFlag + rawInput);
         
         const currentPath = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
         const shortUrl = `${currentPath}/a?=${compressed}`;
 
+        // 結果を画面にセットして表示
+        shortUrlText.innerText = shortUrl;
         resultArea.style.display = 'block';
-        resultArea.innerHTML = `
-            <p><strong>エンコードに成功しました！</strong></p>
-            <div class="result">
-                <a href="${shortUrl}" target="_blank">${shortUrl}</a>
-            </div>
-        `;
+
+        // 前回生成したQRコードがあれば一旦クリアする
+        qrcodeDiv.innerHTML = "";
+        
+        // 新しいQRコードの自動生成
+        qrCodeInstance = new QRCode(qrcodeDiv, {
+            text: shortUrl,
+            width: 160,
+            height: 160,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H // 汚れに強い最高クラスの誤り訂正レベル
+        });
+
     } catch (e) {
         alert('エラーが発生しました。');
     }
+});
+
+// コピペ用（クリップボード書き込み）ボタンの処理
+document.getElementById('copyBtn').addEventListener('click', () => {
+    const shortUrl = document.getElementById('shortUrlText').innerText;
+    const copyBtn = document.getElementById('copyBtn');
+    
+    navigator.clipboard.writeText(shortUrl).then(() => {
+        copyBtn.innerText = "コピー完了！";
+        copyBtn.style.background = "#17a2b8";
+        
+        // 2秒後にボタンの見た目を元に戻す親切設計
+        setTimeout(() => {
+            copyBtn.innerText = "コピー";
+            copyBtn.style.background = "#28a745";
+        }, 2000);
+    }).catch(err => {
+        alert('コピーに失敗しました。お手数ですが手動で選択してコピーしてください。');
+    });
 });
 </script>
 </body>
