@@ -2,106 +2,70 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>完全インブラウザ Go WASM サーバー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WASM Go サーバー URL短縮アプリ</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
-    .card { background: #f8f9fa; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 0 20px; line-height: 1.6; }
+    .card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    input[type="url"] { width: 70%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; }
     button { padding: 10px 18px; font-size: 15px; cursor: pointer; background: #0070f3; color: white; border: none; border-radius: 4px; }
-    button:disabled { background: #ccc; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .status { font-weight: bold; margin-top: 10px; }
+    .success { color: #2e7d32; }
+    ul { padding-left: 20px; word-break: break-all; }
   </style>
-  <script src="https://cdn.jsdelivr.net/gh/tinygo-org/tinygo@v0.31.0/targets/wasm_exec.js"></script>
-  <!-- インブラウザGoコンパイラ（Go1.x/TinyGo WASMビルド）のローダー -->
-  <script src="https://cdn.jsdelivr.net/npm/go-in-browser-compiler@latest/dist/compiler.js"></script>
+  <script src="wasm_exec.js"></script>
 </head>
 <body>
 
-  <h1>🚀 完全ローカル WASM Go サーバー</h1>
+  <h1>🚀 WASM Go サーバー URL短縮アプリ</h1>
   
   <div class="card">
     <h3>サーバー状態</h3>
-    <div id="status">⚙️ ブラウザ内Goコンパイラを準備中...</div>
+    <div id="status" class="status">⚡ WASM Goサーバーを起動中...</div>
   </div>
 
   <div class="card">
-    <h3>URL短縮</h3>
-    <input type="url" id="longUrl" placeholder="https://example.com/path" style="width:70%; padding:8px;">
+    <h3>URL短縮フォーム</h3>
+    <input type="url" id="longUrl" placeholder="https://example.com/very/long/url">
     <button id="shortenBtn" onclick="requestShorten()" disabled>短縮URLを発行</button>
+
+    <h4>発行済みURL一覧:</h4>
     <ul id="urlList"></ul>
   </div>
-
-  <!-- 画面に表示されないGoコード -->
-  <script id="go-source-code" type="text/text-go" style="display: none;">
-package main
-
-import (
-	"crypto/rand"
-	"encoding/hex"
-	"syscall/js"
-)
-
-var store = make(map[string]string)
-
-func generateID() string {
-	b := make([]byte, 3)
-	rand.Read(b)
-	return hex.EncodeToString(b)
-}
-
-func handleShorten(this js.Value, args []js.Value) interface{} {
-	if len(args) < 1 { return "" }
-	id := generateID()
-	store[id] = args[0].String()
-	return id
-}
-
-func handleResolve(this js.Value, args []js.Value) interface{} {
-	if len(args) < 1 { return "" }
-	if target, exists := store[args[0].String()]; exists {
-		return target
-	}
-	return ""
-}
-
-func main() {
-	js.Global().Set("__go_server_shorten", js.FuncOf(handleShorten))
-	js.Global().Set("__go_server_resolve", js.FuncOf(handleResolve))
-	select {}
-}
-  </script>
 
   <script>
     window.addEventListener("DOMContentLoaded", async () => {
       const statusEl = document.getElementById("status");
       
       try {
-        const goCode = document.getElementById("go-source-code").textContent;
-        statusEl.innerText = "⏳ ブラウザ内でGoコードをコンパイル中...";
-
-        // 外部サーバーを使わず、ブラウザ上のWASMコンパイラで直接バイナリ生成！
-        const wasmBuffer = await GoCompiler.compile(goCode);
-
-        // コンパイルされたWASMを起動してGoサーバーを常駐
         const go = new Go();
+        // 自動ビルドされた server.wasm を読み込み
+        const res = await fetch("server.wasm");
+        if (!res.ok) throw new Error("server.wasm の読み込みに失敗しました");
+        
+        const wasmBuffer = await res.arrayBuffer();
         const wasmModule = await WebAssembly.instantiate(wasmBuffer, go.importObject);
         go.run(wasmModule.instance);
 
-        statusEl.innerHTML = "<span style='color:green;'>✅ ブラウザ内コンパイル完了＆Goサーバー起動！</span>";
+        statusEl.innerHTML = "<span class='success'>✅ Go Webサーバーが正常起動しました！</span>";
         document.getElementById("shortenBtn").disabled = false;
 
       } catch (err) {
-        statusEl.innerText = "❌ エラー: " + err.message;
+        statusEl.innerText = "❌ 起動エラー: " + err.message;
       }
     });
 
     function requestShorten() {
       const input = document.getElementById("longUrl");
-      if (!input.value) return;
+      const url = input.value;
+      if (!url) return;
 
-      const key = window.__go_server_shorten(input.value);
+      const key = window.__go_server_shorten(url);
       const shortURL = `${window.location.origin}${window.location.pathname}#${key}`;
       
       const li = document.createElement("li");
-      li.innerHTML = `<a href="${shortURL}" target="_blank">${shortURL}</a> ➔ ${input.value}`;
+      li.innerHTML = `<a href="${shortURL}" target="_blank">${shortURL}</a> ➔ ${url}`;
       document.getElementById("urlList").appendChild(li);
 
       input.value = "";
@@ -112,7 +76,9 @@ func main() {
       const key = window.location.hash.replace("#", "");
       if (key && typeof window.__go_server_resolve === "function") {
         const target = window.__go_server_resolve(key);
-        if (target) window.location.href = target;
+        if (target) {
+          window.location.href = target;
+        }
       }
     }
     setTimeout(checkRedirect, 500);
