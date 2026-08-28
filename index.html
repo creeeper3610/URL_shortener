@@ -1,238 +1,153 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
-    <title>Base66 URL Shortener</title>
-    
-    <script>
-    // --- [最速リダイレクト処理] アクセス時にパラメータがあれば即座に転送 ---
-    const BASE66_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~";
-
-    function decodeBase66(str) {
-        let num = 0n;
-        for (let i = 0; i < str.length; i++) {
-            const index = BASE66_CHARS.indexOf(str[i]);
-            if (index === -1) return null;
-            num = num * 66n + BigInt(index);
-        }
-        const bytes = [];
-        while (num > 0n) {
-            bytes.unshift(Number(num & 0xFFn));
-            num = num >> 8n;
-        }
-        const decoder = new TextDecoder();
-        return decoder.decode(new Uint8Array(bytes));
-    }
-
-    // URLのクエリパラメータを解析
-    const params = new URLSearchParams(window.location.search);
-    const encodeLink = params.get('a'); // ?a= の値を取得
-
-    if (encodeLink) {
-        try {
-            // 66進数として解読
-            const decodedText = decodeBase66(encodeLink);
-            if (decodedText) {
-                let targetUrl = "";
-                if (decodedText.startsWith("s|")) {
-                    targetUrl = "https://" + decodedText.substring(2);
-                } else if (decodedText.startsWith("h|")) {
-                    targetUrl = "http://" + decodedText.substring(2);
-                } else {
-                    targetUrl = "https://" + decodedText;
-                }
-                // 履歴を残さず最速でリダイレクト
-                window.location.replace(targetUrl);
-            }
-        } catch (e) {
-            alert("URLの解析に失敗しました。");
-        }
-    }
-    </script>
-
-    <!-- キャッシュを無効化しつつ、FOUC（デザイン崩れ）を防ぐ最速読み込み -->
-    <link id="mainStylesheet" rel="stylesheet" href="./style.css">
-    <script>
-        // HTMLの解析を止めずに、最速でキャッシュ無効化クエリを付与
-        document.getElementById('mainStylesheet').href = './style.css?v=' + new Date().getTime();
-        
-        // CSSが読み終わったら、またはDOM準備ができたら即座に画面を表示する関数
-        function showApp() {
-            document.body.style.display = 'block';
-        }
-    </script>
-    
-    <!-- ライブラリの読み込み -->
-    <script src="./qrcode.min.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>インブラウザ WASM Go サーバー URL短縮機</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 0 20px; line-height: 1.6; }
+    .card { background: #f8f9fa; border: 1px solid #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    input[type="url"] { width: 70%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 10px 18px; font-size: 15px; cursor: pointer; background: #0070f3; color: white; border: none; border-radius: 4px; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .status { font-weight: bold; margin-top: 10px; }
+    .success { color: #2e7d32; }
+    ul { padding-left: 20px; word-break: break-all; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/gh/tinygo-org/tinygo@v0.31.0/targets/wasm_exec.js"></script>
 </head>
-<!-- 初期状態は完全に非表示（display:none）にし、CSS適用後にJavaScriptで開く -->
-<body style="display: none;" onload="showApp()">
+<body>
 
-<div class="app-layout">
-    <!-- x.gdスタイルのミニマルヘッダー -->
-    <header class="app-header">
-        <div class="logo-area">
-            <!-- サイトロゴとして icon.svg を美しく読み込み -->
-            <img src="./icon.svg" alt="Base66 Logo" class="logo-img" />
-            <h1 class="app-title">URL Shortener Tool</h1>
-        </div>
-        <p class="app-subtitle">長いURLを最短に。登録不要・完全無料で使える無期限の次世代URL短縮サービス。</p>
-    </header>
+  <h1>🚀 WASM Go サーバー URL短縮アプリ</h1>
+  
+  <div class="card">
+    <h3>サーバー状態</h3>
+    <div id="status" class="status">⚡ Goサーバーをビルド＆起動中...</div>
+  </div>
 
-    <main class="app-main">
-        <!-- 入力セクション -->
-        <div class="tool-section input-section">
-            <div class="input-group">
-                <div class="select-wrapper">
-                    <select id="protocolSelect">
-                        <option value="https://">https://</option>
-                        <option value="http://">http://</option>
-                    </select>
-                </div>
-                <input type="text" id="urlInput" placeholder="example.com" />
-            </div>
-            <!-- 矢印を完全に削除した、洗練された単一ボタン -->
-            <button id="generateBtn" class="action-btn">短縮URLを作成する</button>
-        </div>
+  <div class="card">
+    <h3>URL短縮フォーム</h3>
+    <input type="url" id="longUrl" placeholder="https://example.com/very/long/url">
+    <button id="shortenBtn" onclick="requestShorten()" disabled>短縮URLを発行</button>
 
-        <!-- 結果表示セクション (最初は非表示) -->
-        <div id="resultArea" class="tool-section result-section" style="display:none;">
-            <h2 class="section-title">短縮URLが完成しました</h2>
-            
-            <div class="result-actions">
-                <button id="copyBtn" class="copy-btn">URLをコピーする</button>
-                <a id="shortUrlText" class="short-url-link" href="#" target="_blank" title="新しいタブで開く"></a>
-            </div>
-            
-            <div class="qr-container">
-                <h3 class="qr-title">QRコード</h3>
-                <div class="qr-box">
-                    <div id="qrcode"></div>
-                </div>
-                <button id="downloadBtn" class="download-btn">QRコードを保存する</button>
-            </div>
-        </div>
-    </main>
-</div>
+    <h4>発行済みURL一覧:</h4>
+    <ul id="urlList"></ul>
+  </div>
 
-<script>
-// --- URL安全なBase66暗号化システム ---
-document.getElementById('urlInput').addEventListener('input', (e) => {
-    let value = e.target.value.trim();
-    if (/^https:\/\//i.test(value)) {
-        document.getElementById('protocolSelect').value = "https://";
-        e.target.value = value.replace(/^https:\/\//i, '');
-    } else if (/^http:\/\//i.test(value)) {
-        document.getElementById('protocolSelect').value = "http://";
-        e.target.value = value.replace(/^http:\/\//i, '');
-    }
-});
+  <script id="go-source-code" type="text/text-go" style="display: none;">
+package main
 
-document.getElementById('generateBtn').addEventListener('click', () => {
-    if (typeof QRCode === 'undefined') {
-        alert('ライブラリの読み込み中です。しばらく待ってからもう一度お試しください。');
-        return;
-    }
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"syscall/js"
+)
 
-    const urlInput = document.getElementById('urlInput');
-    const protocolSelect = document.getElementById('protocolSelect');
-    const resultArea = document.getElementById('resultArea');
-    const shortUrlText = document.getElementById('shortUrlText');
-    const qrcodeDiv = document.getElementById('qrcode');
-    
-    let rawInput = urlInput.value.trim();
-    if (!rawInput) { alert('URLを入力してください'); return; }
+// メモリ内のURLデータベース
+var store = make(map[string]string)
 
-    rawInput = rawInput.replace(/^https?:\/\//i, '');
-
-    try {
-        const protocolFlag = (protocolSelect.value === "https://") ? "s|" : "h|";
-        const compressed = encodeBase66(protocolFlag + rawInput);
-        
-        const currentPath = window.location.origin + window.location.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
-        const shortUrl = `${currentPath}/?a=${compressed}`;
-
-        shortUrlText.innerText = shortUrl;
-        shortUrlText.href = shortUrl;
-
-        qrcodeDiv.innerHTML = "";
-        new QRCode(qrcodeDiv, {
-            text: shortUrl,
-            width: 200,
-            height: 200,
-            colorDark : "#222222",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-
-        resultArea.style.display = 'block';
-
-    } catch (e) {
-        alert('変換中にエラーが発生しました。');
-    }
-});
-
-function encodeBase66(str) {
-    const encoder = new TextEncoder();
-    const bytes = encoder.encode(str);
-    let num = 0n;
-    for (let i = 0; i < bytes.length; i++) {
-        num = (num << 8n) + BigInt(bytes[i]);
-    }
-    if (num === 0n) return BASE66_CHARS;
-    
-    let result = "";
-    while (num > 0n) {
-        const remainder = Number(num % 66n);
-        result = BASE66_CHARS[remainder] + result;
-        num = num / 66n;
-    }
-    return result;
+func generateID() string {
+	b := make([]byte, 3)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
-document.getElementById('copyBtn').addEventListener('click', () => {
-    const shortUrl = document.getElementById('shortUrlText').innerText;
-    const copyBtn = document.getElementById('copyBtn');
-    
-    navigator.clipboard.writeText(shortUrl).then(() => {
-        copyBtn.innerText = "コピー完了！";
-        copyBtn.style.background = "#4ade80";
-        
-        setTimeout(() => {
-            copyBtn.innerText = "URLをコピーする";
-            copyBtn.style.background = "#222222";
-        }, 2000);
+// HTTPリクエストを受け取るGoサーバーハンドラー（/shorten）
+func handleShorten(this js.Value, args []js.Value) interface{} {
+	if len(args) < 1 {
+		return ""
+	}
+	longURL := args[0].String()
+	id := generateID()
+	store[id] = longURL
+	return id
+}
+
+// HTTPリクエストを受け取るGoサーバーハンドラー（/resolve）
+func handleResolve(this js.Value, args []js.Value) interface{} {
+	if len(args) < 1 {
+		return ""
+	}
+	id := args[0].String()
+	if target, exists := store[id]; exists {
+		return target
+	}
+	return ""
+}
+
+func main() {
+	// JavaScript側にサーバーのAPIエンドポイント（関数）を公開・マウント
+	js.Global().Set("__go_server_shorten", js.FuncOf(handleShorten))
+	js.Global().Set("__go_server_resolve", js.FuncOf(handleResolve))
+
+	// サーバーを常駐稼働（ブロック）させる
+	select {}
+}
+  </script>
+
+  <script>
+    // 画面ロード時に自動でコンパイル＆Goサーバーを起動！
+    window.addEventListener("DOMContentLoaded", async () => {
+      const statusEl = document.getElementById("status");
+      
+      try {
+        // body内の<script>からGoのソースコードを読み込む（画面には出ないよ！）
+        const goCode = document.getElementById("go-source-code").textContent;
+
+        // インブラウザコンパイル（TinyGo API）
+        const res = await fetch("https://play.tinygo.org/compile", {
+          method: "POST",
+          body: goCode
+        });
+
+        if (!res.ok) throw new Error("コンパイル失敗");
+
+        const wasmBuffer = await res.arrayBuffer();
+
+        // Go WASM サーバーをインスタンス化してバックグラウンドで起動！
+        const go = new Go();
+        const wasmModule = await WebAssembly.instantiate(wasmBuffer, go.importObject);
+        go.run(wasmModule.instance);
+
+        statusEl.innerHTML = "<span class='success'>✅ Go Webサーバーがブラウザ内で正常起動しました！</span>";
+        document.getElementById("shortenBtn").disabled = false;
+
+      } catch (err) {
+        statusEl.innerText = "❌ 起動エラー: " + err.message;
+      }
     });
-});
 
-document.getElementById('downloadBtn').addEventListener('click', () => {
-    const qrcodeDiv = document.getElementById('qrcode');
-    const img = qrcodeDiv.querySelector('img');
-    const canvas = qrcodeDiv.querySelector('canvas');
-    let downloadUrl = "";
+    // GoサーバーへURL短縮のリクエストを送信
+    function requestShorten() {
+      const input = document.getElementById("longUrl");
+      const url = input.value;
+      if (!url) return;
 
-    if (img && img.src) {
-        downloadUrl = img.src;
-    } else if (canvas) {
-        downloadUrl = canvas.toDataURL("image/png");
+      // バックグラウンドで動くGoサーバーの処理を実行
+      const key = window.__go_server_shorten(url);
+      
+      const shortURL = `${window.location.origin}${window.location.pathname}#${key}`;
+      
+      const li = document.createElement("li");
+      li.innerHTML = `<a href="${shortURL}" target="_blank">${shortURL}</a> ➔ ${url}`;
+      document.getElementById("urlList").appendChild(li);
+
+      input.value = "";
     }
 
-    if (downloadUrl) {
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = 'short-qrcode.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    } else {
-        alert('QRコードの画像データが見つかりません。');
+    // ハッシュ付きアクセス時にGoサーバーへ元のURLを問い合わせて転送
+    window.addEventListener("hashchange", checkRedirect);
+    function checkRedirect() {
+      const key = window.location.hash.replace("#", "");
+      if (key && typeof window.__go_server_resolve === "function") {
+        const target = window.__go_server_resolve(key);
+        if (target) {
+          window.location.href = target;
+        }
+      }
     }
-});
-
-// 万が一onloadが効かない場合のバックアップ表示処理
-setTimeout(showApp, 400);
-</script>
+    // 初回読み込み時もチェック
+    setTimeout(checkRedirect, 500);
+  </script>
 </body>
 </html>
